@@ -1,0 +1,25 @@
+# outputs
+*_all.json
+!sample data pulls/
+!sample data pulls/*.json
+
+# caches and browser profiles
+cache/
+.zillow-puller/
+local/
+
+# Python/build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+build/
+dist/
+
+# local captures and diagnostics
+capture*.json
+homepage.png
+err*.log
+nul

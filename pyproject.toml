@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zillow-puller"
+version = "0.2.1"
+description = "Pull complete Zillow regions with a trusted Chrome profile, in-page API calls, and recursive map tiling."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "nodriver>=0.50",
+    "playwright>=1.40",
+    "curl_cffi>=0.7",
+]
+
+[project.scripts]
+zillow-puller = "zillow_pull:main"
+
+[tool.setuptools]
+py-modules = ["zillow_pull", "zillow_pages"]
+
+[tool.setuptools.packages.find]
+include = ["zillow_puller*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
