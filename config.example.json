@@ -1,0 +1,73 @@
+{
+  "start_url": "https://example.com/properties?city=Toronto&state=ON&page=1",
+  "user_agent": "PropertyResearchBot/1.0 (+mailto:student@example.edu)",
+  "output_csv": "data/listings.csv",
+  "checkpoint_file": "data/checkpoint.json",
+  "error_directory": "data/errors",
+  "page_wait_seconds": 15,
+  "request_delay_seconds": 3.0,
+  "request_jitter_seconds": 0.5,
+  "max_pages": 40,
+  "max_attempts_per_page": 3,
+  "backoff_base_seconds": 5,
+  "empty_page_stop_threshold": 3,
+  "session_restart_pages": 0,
+  "headless": true,
+  "pagination": {
+    "mode": "next_button",
+    "next_selector": "a[aria-label='Next page']",
+    "disabled_attribute": "aria-disabled"
+  },
+  "challenge": {
+    "selectors": [
+      "#px-captcha",
+      "iframe[src*='captcha']",
+      "iframe[src*='recaptcha']",
+      ".g-recaptcha",
+      "[data-testid='captcha']"
+    ],
+    "text_markers": [
+      "access to this page has been denied",
+      "press &amp; hold",
+      "press & hold",
+      "press and hold",
+      "confirm you are a human",
+      "verify you are human"
+    ]
+  },
+  "selectors": {
+    "card": "[data-test='property-card']",
+    "listing_id": {
+      "selector": "[data-listing-id]",
+      "attribute": "data-listing-id"
+    },
+    "address": {
+      "selector": "address"
+    },
+    "price": {
+      "selector": "[data-test='price']",
+      "transform": "money",
+      "validation": {"min": 0, "max": 500000000}
+    },
+    "beds": {
+      "selector": "[data-test='beds']",
+      "transform": "number"
+    },
+    "baths": {
+      "selector": "[data-test='baths']",
+      "transform": "number"
+    },
+    "sqft": {
+      "selector": "[data-test='sqft']",
+      "transform": "integer"
+    },
+    "agent": {
+      "selector": "[data-test='agent']"
+    },
+    "url": {
+      "selector": "a[data-test='details-link']",
+      "attribute": "href"
+    }
+  }
+}
+
