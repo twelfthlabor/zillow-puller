@@ -191,7 +191,7 @@ Research use only. Listing data belongs to its source; respect its terms of use.
 ## Development setup
 
 ```bash
-cd /Users/daniel/Desktop/repo/property-scraper
+cd /path/to/property-scraper
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .

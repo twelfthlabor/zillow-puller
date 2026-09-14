@@ -58,6 +58,7 @@ import socket
 import statistics
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import urllib.request
@@ -68,7 +69,7 @@ from seleniumbase import sb_cdp
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures"
-DEFAULT_OUT_DIR = Path("/var/folders/mm/cjrnx72n7mz54jsfx4q0rvww0000gp/T/opencode/zillow-perf")
+DEFAULT_OUT_DIR = Path(tempfile.gettempdir()) / "zillow-perf"
 CHROME_BINARY = Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 CHROME_READY_TIMEOUT_SECONDS = 15.0
 COLLECT_PAGE_WAIT_SECONDS = 15.0
