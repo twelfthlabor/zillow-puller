@@ -186,7 +186,7 @@ resumes it automatically from its checkpoint.
 endpoint is down. It is a manual-run switch only: launchd jobs do not inherit
 your shell environment, so a scheduled run always launches Chrome.
 
-Private research use only — do not publish or redistribute scraped data.
+Research use only. Listing data belongs to its source; respect its terms of use.
 
 ## Development setup
 
