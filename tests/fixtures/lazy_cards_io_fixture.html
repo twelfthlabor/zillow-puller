@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>IO-only lazy fixture — hydration strictly on intersection</title>
+  <style>
+    html, body { margin: 0; padding: 0; font-family: sans-serif; color: #222; }
+    h1 { margin: 8px 12px; font-size: 18px; }
+    #search-pane {
+      position: relative;
+      height: 520px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+    }
+    ul.cards { list-style: none; margin: 0; padding: 0; }
+    li { display: block; }
+    article[data-testid="property-card"] {
+      box-sizing: border-box;
+      height: 220px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e2e2;
+      background: #fff;
+    }
+    article[data-testid="property-card"] a { display: block; font-weight: 600; }
+    article[data-testid="property-card"] div { min-height: 20px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h1>IO-only results</h1>
+  <div id="search-pane">
+    <ul class="cards" id="cards"></ul>
+  </div>
+  <script>
+    "use strict";
+    // 36 Zillow-shaped cards. Unlike lazy_cards_fixture.html there is NO
+    // scroll-listener or viewport-position sweep: price/details hydrate only
+    // when IntersectionObserver reports the card intersecting the pane, and
+    // the brokerage field arrives 300 ms after that hydration. A collector
+    // that leaps several viewports between rendering frames can miss IO
+    // callbacks and silently lose fields; this fixture exists to fail that way.
+    const CARD_COUNT = 36;
+    const DELAYED_FIELD_MS = 300;
+    const pane = document.getElementById("search-pane");
+    const list = document.getElementById("cards");
+    const hydrated = new Set();
+
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < CARD_COUNT; i++) {
+      const listingId = 20000000 + i;
+      const li = document.createElement("li");
+      li.innerHTML =
+        '<article data-testid="property-card" data-index="' + i + '">' +
+        '<a data-testid="property-card-link" ' +
+        'href="/homedetails/' + (200 + i) + '-IO-St-Toronto-ON/' +
+        listingId + '_zpid/"></a>' +
+        '<div data-testid="property-card-price"></div>' +
+        '<div data-testid="property-card-details"></div>' +
+        '<div data-testid="property-card-brokerage"></div>' +
+        "</article>";
+      fragment.appendChild(li);
+    }
+    list.appendChild(fragment);
+
+    const cards = Array.from(
+      document.querySelectorAll('[data-testid="property-card"]')
+    );
+
+    function hydrateCard(card) {
+      if (hydrated.has(card)) return;
+      hydrated.add(card);
+      const index = Number(card.dataset.index);
+      const delay = 60 + ((index * 37) % 91); // 60-150 ms stagger
+      window.setTimeout(function () {
+        const beds = 2 + (index % 4);
+        const baths = 1 + (index % 3);
+        const sqft = 800 + index * 41;
+        const price = 500000 + index * 30000;
+        card.querySelector('[data-testid="property-card-link"]').textContent =
+          (200 + index) + " IO Street, Toronto, ON";
+        card.querySelector('[data-testid="property-card-price"]').textContent =
+          "$" + price.toLocaleString("en-US");
+        card.querySelector('[data-testid="property-card-details"]').textContent =
+          beds + " bds | " + baths + " ba | " +
+          sqft.toLocaleString("en-US") + " sqft";
+        window.setTimeout(function () {
+          card.querySelector(
+            '[data-testid="property-card-brokerage"]'
+          ).textContent =
+            "MLS\u00ae ID #C" + (2000000 + index) + ", IO Brokerage " +
+            index + " Realty";
+        }, DELAYED_FIELD_MS);
+      }, delay);
+    }
+
+    const observer = new IntersectionObserver(
+      function (entries) {
+        for (const entry of entries) {
+          if (entry.isIntersecting) hydrateCard(entry.target);
+        }
+      },
+      { root: pane, threshold: 0.1 }
+    );
+    cards.forEach(function (card) { observer.observe(card); });
+  </script>
+</body>
+</html>

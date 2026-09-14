@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Lazy-scroll fixture — Zillow-shaped cards that hydrate on view</title>
+  <style>
+    html, body { margin: 0; padding: 0; font-family: sans-serif; color: #222; }
+    h1 { margin: 8px 12px; font-size: 18px; }
+    #search-pane {
+      position: relative;
+      height: 520px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+    }
+    ul.cards { list-style: none; margin: 0; padding: 0; }
+    li { display: block; }
+    article[data-testid="property-card"] {
+      box-sizing: border-box;
+      height: 220px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e2e2;
+      background: #fff;
+    }
+    article[data-testid="property-card"] a { display: block; font-weight: 600; }
+    article[data-testid="property-card"] div { min-height: 20px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Toronto homes for sale</h1>
+  <div id="search-pane">
+    <ul class="cards" id="cards"></ul>
+  </div>
+  <script>
+    "use strict";
+    // 42 Zillow-shaped cards inside a scrollable pane. Card shells (with the
+    // listing URL) render immediately; price/details/address hydrate only
+    // after the card has been scrolled into view, staggered 60-150 ms, like a
+    // lazy Zillow result pane. A hard case then delivers the brokerage
+    // (agent) field for every card ~2 s after load: a collector that stops
+    // polling as soon as the pane reaches the bottom would silently drop it.
+    const CARD_COUNT = 42;
+    const LATE_FIELD_DELAY_MS = 2000;
+    // Benchmarks may disable the artificial late field with ?late_ms=0 to
+    // measure a page whose fields settle during scrolling.
+    const lateParameter = new URLSearchParams(window.location.search).get("late_ms");
+    const lateFieldDelayMs =
+      lateParameter === null ? LATE_FIELD_DELAY_MS : Number(lateParameter);
+    const pane = document.getElementById("search-pane");
+    const list = document.getElementById("cards");
+    const hydrated = new Set();
+
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < CARD_COUNT; i++) {
+      const listingId = 10000000 + i;
+      const li = document.createElement("li");
+      li.innerHTML =
+        '<article data-testid="property-card" data-index="' + i + '">' +
+        '<a data-testid="property-card-link" ' +
+        'href="/homedetails/' + (100 + i) + '-Fixture-St-Toronto-ON/' +
+        listingId + '_zpid/"></a>' +
+        '<div data-testid="property-card-price"></div>' +
+        '<div data-testid="property-card-details"></div>' +
+        '<div data-testid="property-card-brokerage"></div>' +
+        "</article>";
+      fragment.appendChild(li);
+    }
+    list.appendChild(fragment);
+
+    const cards = Array.from(
+      document.querySelectorAll('[data-testid="property-card"]')
+    );
+
+    function fillBrokerage(card) {
+      const index = Number(card.dataset.index);
+      card.querySelector('[data-testid="property-card-brokerage"]').textContent =
+        "MLS\u00ae ID #C" + (1000000 + index) + ", Brokerage " + index + " Realty";
+    }
+
+    function hydrateCard(card) {
+      if (hydrated.has(card)) return;
+      hydrated.add(card);
+      const index = Number(card.dataset.index);
+      const delay = 60 + ((index * 37) % 91); // 60-150 ms stagger
+      window.setTimeout(function () {
+        const beds = 2 + (index % 4);
+        const baths = 1 + (index % 3);
+        const sqft = 900 + index * 37;
+        const price = 450000 + index * 25000;
+        card.querySelector('[data-testid="property-card-link"]').textContent =
+          (100 + index) + " Fixture Street, Toronto, ON";
+        card.querySelector('[data-testid="property-card-price"]').textContent =
+          "$" + price.toLocaleString("en-US");
+        card.querySelector('[data-testid="property-card-details"]').textContent =
+          beds + " bds | " + baths + " ba | " +
+          sqft.toLocaleString("en-US") + " sqft";
+        if (lateFieldDelayMs <= 0) {
+          // Typical-case mode: the brokerage follows its card shortly, with
+          // no artificial multi-second second response.
+          window.setTimeout(function () { fillBrokerage(card); }, 120);
+        }
+      }, delay);
+    }
+
+    const observer = new IntersectionObserver(
+      function (entries) {
+        for (const entry of entries) {
+          if (entry.isIntersecting) hydrateCard(entry.target);
+        }
+      },
+      { root: pane, threshold: 0.05 }
+    );
+    cards.forEach(function (card) { observer.observe(card); });
+
+    // Fast programmatic scrolling can outrun IntersectionObserver delivery,
+    // so also sweep cards whose top has entered (or passed) the viewport.
+    function sweep() {
+      const limit = pane.scrollTop + pane.clientHeight + 60;
+      for (const card of cards) {
+        if (card.offsetTop < limit) hydrateCard(card);
+      }
+    }
+    pane.addEventListener("scroll", sweep, { passive: true });
+    sweep();
+
+    if (lateFieldDelayMs > 0) {
+      window.setTimeout(function () {
+        for (const card of cards) {
+          fillBrokerage(card);
+        }
+      }, lateFieldDelayMs);
+    }
+  </script>
+</body>
+</html>

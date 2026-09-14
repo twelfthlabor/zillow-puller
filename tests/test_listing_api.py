@@ -60,7 +60,7 @@ def test_http_server_endpoints(tmp_path: Path) -> None:
     metadata_path.write_text(
         json.dumps(
             {
-                "source_type": "reso_web_api",
+                "source_type": "zillow_browser",
                 "coverage_scope": "Active Toronto fixture listings",
                 "retrieval": {"complete_for_configured_scope": True},
             }
@@ -78,7 +78,7 @@ def test_http_server_endpoints(tmp_path: Path) -> None:
 
         with urllib.request.urlopen(f"{base}/metadata") as response:
             metadata = json.loads(response.read())
-            assert metadata["source_type"] == "reso_web_api"
+            assert metadata["source_type"] == "zillow_browser"
             assert metadata["retrieval"]["complete_for_configured_scope"] is True
 
         with urllib.request.urlopen(

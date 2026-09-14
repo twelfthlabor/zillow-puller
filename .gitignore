@@ -6,3 +6,9 @@ __pycache__/
 .DS_Store
 data/
 config.json
+
+# local R history
+.Rhistory
+
+# stray logs (run logs live under data/, already ignored)
+*.log

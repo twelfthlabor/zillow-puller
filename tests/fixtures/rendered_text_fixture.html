@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Rendered-text fixture — script/hidden text must not reach the CSV</title>
+</head>
+<body>
+  <main>
+    <section id="grid-search-results" class="list">
+      <ul class="photo-cards">
+        <li class="photo-cards__item">
+          <article data-testid="property-card">
+            <a data-testid="property-card-link"
+               href="/homedetails/123-Maple-St-Toronto-ON/12345678_zpid/">123 Maple St, Toronto, ON<script>window.__fixtureNoise = "SCRIPTTEXT";</script><span style="display:none">HIDDENTEXT</span></a>
+            <div data-testid="property-card-price">$599,900</div>
+            <div data-testid="property-card-details">3 bds | 2 ba | 1,500 sqft</div>
+            <div data-testid="property-card-brokerage">Royal LePage Realty</div>
+          </article>
+        </li>
+      </ul>
+    </section>
+    <a class="next" aria-disabled="true" href="#">Next page</a>
+  </main>
+</body>
+</html>

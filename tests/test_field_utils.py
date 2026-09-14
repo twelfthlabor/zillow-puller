@@ -25,6 +25,21 @@ def test_detail_transforms() -> None:
     assert normalize("2 Bedroom 1 Bath", "detail_beds") == "2"
 
 
+def test_detail_transforms_live_concatenated_format() -> None:
+    """Live Zillow renders the detail spans with no separator: '5 bds7 ba'."""
+    assert normalize("5 bds7 ba", "detail_beds") == "5"
+    assert normalize("5 bds7 ba", "detail_baths") == "7"
+    assert normalize("5 BDS7 BA", "detail_beds") == "5"
+    assert normalize("5 BDS7 BA", "detail_baths") == "7"
+    # A following digit must not stop the unit from matching either.
+    assert normalize("7 ba1,500 sqft", "detail_baths") == "7"
+    assert normalize("7 ba1,500 sqft", "detail_sqft") == "1500"
+    assert normalize("3 bds2 ba900 sqft", "detail_beds") == "3"
+    assert normalize("3 bds2 ba900 sqft", "detail_baths") == "2"
+    assert normalize("3 bds2 ba900 sqft", "detail_sqft") == "900"
+    assert normalize("900 sqft500", "detail_sqft") == "900"
+
+
 def test_brokerage_strips_mls_prefix() -> None:
     assert (
         normalize("MLS® ID #W123456, ROYAL LEPAGE RCR REALTY", "brokerage")

@@ -1,22 +1,41 @@
 {
-  "start_url": "https://example.com/properties?city=Toronto&state=ON&page=1",
+  "start_url": "https://www.zillow.com/{city}-{state}/",
   "user_agent": "PropertyResearchBot/1.0 (+mailto:student@example.edu)",
   "output_csv": "data/listings.csv",
   "checkpoint_file": "data/checkpoint.json",
   "error_directory": "data/errors",
+  "report_file": "data/report.json",
+  "archive_directory": null,
+  "attach_address": null,
+  "user_data_dir": null,
   "page_wait_seconds": 15,
   "request_delay_seconds": 3.0,
   "request_jitter_seconds": 0.5,
-  "max_pages": 40,
+  "max_pages": 0,
   "max_attempts_per_page": 3,
   "backoff_base_seconds": 5,
   "empty_page_stop_threshold": 3,
   "session_restart_pages": 0,
+  "incremental_stop": {
+    "enabled": true,
+    "known_ratio": 0.8,
+    "min_records": 20
+  },
   "headless": true,
   "pagination": {
     "mode": "next_button",
     "next_selector": "a[aria-label='Next page']",
-    "disabled_attribute": "aria-disabled"
+    "disabled_attribute": "aria-disabled",
+    "url_template_fallback": "https://www.zillow.com/{city}-{state}/{page}_p/"
+  },
+  "scrolling": {
+    "enabled": true,
+    "max_rounds": 80,
+    "stable_rounds": 3,
+    "settle_seconds": 2.5,
+    "step_delay_seconds": 0.05,
+    "poll_seconds": 0.2,
+    "scroll_fraction": 0.8
   },
   "challenge": {
     "selectors": [
@@ -70,4 +89,3 @@
     }
   }
 }
-

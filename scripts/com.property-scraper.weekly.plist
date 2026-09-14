@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Weekly private-research run: Sunday 03:00 local time.
+  Install with scripts/install_weekly_schedule.sh (it copies this file to
+  ~/Library/LaunchAgents/ and loads it; installing never starts a run).
+  Polite private research only: challenges stop the run and the next
+  invocation resumes; nothing is published or deployed.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>local.property-scraper.weekly</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/daniel/Desktop/repo/property-scraper/scripts/weekly_run.sh</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/daniel/Desktop/repo/property-scraper</string>
+	<key>StandardOutPath</key>
+	<string>/Users/daniel/Desktop/repo/property-scraper/data/regions/logs/launchd.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/daniel/Desktop/repo/property-scraper/data/regions/logs/launchd.log</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Weekday</key>
+		<integer>0</integer>
+		<key>Hour</key>
+		<integer>3</integer>
+		<key>Minute</key>
+		<integer>0</integer>
+	</dict>
+	<key>RunAtLoad</key>
+	<false/>
+</dict>
+</plist>

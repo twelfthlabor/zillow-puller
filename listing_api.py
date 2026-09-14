@@ -1,6 +1,6 @@
 """Read-only JSON API over collected property listings.
 
-Serves whatever the collectors have written to CSV. No database, no web
+Serves whatever the collector has written to CSV. No database, no web
 framework — stdlib only, so ``property-api`` runs anywhere the scraper runs.
 Data is loaded into memory at startup; restart the server to pick up a
 newly completed run (or send SIGHUP for an in-place reload).

@@ -48,22 +48,25 @@ def normalize(value: str, transform: str) -> str:
     if transform == "detail_beds":
         if re.search(r"\bstudio\b", value, flags=re.IGNORECASE):
             return "0"
+        # Zillow concatenates the detail spans ("5 bds7 ba"), so only reject a
+        # following *letter*; a following digit starts the next field's value.
         match = re.search(
-            r"(\d+(?:\.\d+)?)\s*(?:bd|bds|bed|beds|bedroom|bedrooms)\b",
+            r"(\d+(?:\.\d+)?)\s*(?:bds|beds|bedrooms|bedroom|bed|bd)(?![a-z])",
             value,
             flags=re.IGNORECASE,
         )
         return match.group(1) if match else ""
     if transform == "detail_baths":
         match = re.search(
-            r"(\d+(?:\.\d+)?)\s*(?:ba|bath|baths|bathroom|bathrooms)\b",
+            r"(\d+(?:\.\d+)?)\s*"
+            r"(?:baths|bathrooms|bathroom|baths?|ba)(?![a-z])",
             value,
             flags=re.IGNORECASE,
         )
         return match.group(1) if match else ""
     if transform == "detail_sqft":
         match = re.search(
-            r"([\d,]+)\s*(?:sq\.?\s*ft\.?|sqft|ft²)\b",
+            r"([\d,]+)\s*(?:sq\.?\s*ft\.?|sqft|ft²)(?![a-z])",
             value,
             flags=re.IGNORECASE,
         )
