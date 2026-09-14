@@ -2,99 +2,120 @@
 
 ## Product intent
 
-This repo collects Zillow property listings with a polite SeleniumBase run —
-one browser session at a time, and one region at a time when the Ontario
-queue is driving. The preferred workflow attaches to an already-running
-Chrome (`attach_address`) so the scraper never launches or quits the
-browser, and a human handles any verification page in that browser. A
-challenged region is marked `challenged` and the queue moves on; it resumes
-automatically on a later invocation, and a total challenge bound (checked
-between regions) can stop one invocation early. Toronto is the proving
-ground. The working loop is:
+Zillow-first listing collector: one browser session at a time, one region at a
+time when the Ontario queue is driving. The preferred workflow attaches to an
+already-running Chrome (`attach_address`), so the scraper never launches or
+quits that browser; a human handles any verification page in it.
+
+Working loop:
 
 ```bash
 scripts/launch_attach_chrome.sh           # once per scraping session
 property-ontario --dry-run
 property-ontario
-property-api --csv data/listings.csv --host 127.0.0.1 --port 8000
+property-api --csv data/ontario-listings.csv --host 127.0.0.1 --port 8000
 ```
 
-Collection is Zillow-first and honest about completeness: a run that hits a
-challenge, a page cap, an empty-page threshold, or selector trouble is
-partial or unknown, never complete. A first-page sample is never presented
-as all listings, and `incremental_complete` means the refresh page was
-mostly already known — not that pagination was exhausted.
+Coverage honesty is the product. A run cut short by a challenge, page cap,
+empty-page threshold, or selector trouble is partial or unknown, never
+complete; "all" means the named query scope (source, city, pages) with a
+documented terminal `stop_reason`. A first-page sample is never presented as
+all listings, and `incremental_complete` means the refresh page was mostly
+already known, not that pagination was exhausted. Stay polite: courtesy
+delays, stop on challenges with a cooldown, bounded challenges per invocation;
+never add retries that hammer the site or work around a challenge.
 
-## What work should optimize for
+## Commands
 
-1. Reliable Zillow collection: selectors, bulk lazy-scroll extraction,
-   pagination, checkpoint/resume, and queue state that survive ordinary page
-   variation.
-2. Polite behavior: one browser session at a time and one queue region at a
-   time, courtesy delays, stop-on-challenge with a randomized cooldown, a
-   per-region consecutive-challenge limit that marks the region `challenged`
-   and moves on, and a bounded total number of challenges per invocation.
-   Never add retries that hammer the site.
-3. Coverage honesty: an explicit `stop_reason`, pages traversed, dedup
-   counts, field-quality warnings, and a clear complete/partial/empty/unknown
-   reading for every run.
-4. Simple research workflow: CSV on disk plus a read-only HTTP server over
-   that CSV.
+- Interpreter: `.venv313/bin/python` (3.13, editable install of this repo).
+  There is no global `python`; the console scripts come from this venv.
+- Full suite: `.venv313/bin/python -m pytest -q` (~151 tests, ~50 s).
+- Single test: `.venv313/bin/python -m pytest tests/test_ontario_pull.py -k stall -q`
+- Real-Chrome integration (their own throwaway Chrome; skipped if missing):
+  `.venv313/bin/python -m pytest tests/test_integration_attach.py tests/test_integration_lazy_io.py -q`
+- Queue subprocess tests (fake scraper fixture, no browser):
+  `.venv313/bin/python -m pytest tests/test_integration_runner.py -q`
+- Queue dry run: `.venv313/bin/python -m ontario_pull --dry-run`
+- Merge region CSVs:
+  `.venv313/bin/python scripts/merge_listings.py --state-dir data/regions --output data/ontario-listings.csv`
 
-## Meaning of "all listings"
+## Testing rules
 
-"All" is an ambition, not a claim. A result is complete only for the named
-query scope (source, city, pages) after pagination reaches a documented
-terminal condition with no cap, challenge, or failure cutting it short. Each
-run must say what was attempted, what completed, and what remains unknown.
+- Integration tests launch a throwaway headless Chrome on a free port with a
+  temp profile. Never aim tests at the user's live Chrome on 127.0.0.1:9222.
+  Product code must never quit/close an attached browser; the no-quit proof in
+  `tests/test_integration_attach.py` must keep passing.
+- New behavior needs fails-before/passes-after evidence; a green suite alone is
+  not enough. The stall-watchdog tests are the model.
+- Reuse `tests/fixtures/` (Zillow-shaped HTML, `fake_scraper.py` hang/chatty/
+  challenge modes) instead of new scaffolds.
 
 ## Repository map
 
-- `property_scraper.py`: SeleniumBase collector (`property-scraper`). Attach
-  mode (`attach_address`) connects to an existing browser and leaves it
-  open; launch mode starts and quits its own. Writes CSV, checkpoint, error
-  diagnostics, optional gzipped page archive, and a run report; stops on
-  human verification (exit 3).
-- `ontario_pull.py`: region queue (`property-ontario`). Generates and
-  validates per-region configs under the state dir, walks
-  `regions.ontario.json` in order, resumes `partial`/`challenged` regions,
-  waits a cooldown after challenges, marks a region `challenged` after its
-  per-region limit and continues, bounds total challenges per invocation
-  (checked at region boundaries; fresh work before challenged retries),
-  holds a state-dir lock against concurrent runs, and preflights
-  `attach_address` before running regions.
-- `regions.ontario.json`: 36 Ontario cities, province `on`.
-- `scripts/launch_attach_chrome.sh`: starts Chrome with
-  `--remote-debugging-port` and a dedicated `--user-data-dir`, then waits
-  for the DevTools endpoint.
+- `property_scraper.py`: collector. SeleniumBase Pure CDP (`sb_cdp.Chrome`)
+  for attach and launch; `_build_session` opens the session, `_navigate` owns
+  navigation/timeout/redirect classification, `_wait_for_cards` +
+  `_detect_challenge` own the challenge-aware wait, and the scrolling
+  collector bulk-extracts every card per JS round-trip. Writes CSV,
+  checkpoint, error diagnostics, optional page archive, and a run report;
+  exits 3 on human verification.
+- `ontario_pull.py`: region queue. Generates per-region configs under the
+  state dir, walks `regions.ontario.json`, resumes `partial`/`challenged`
+  regions, cools down after challenges, bounds total challenges, holds a
+  state-dir lock, and preflights the attach endpoint. Stall watchdog: a child
+  silent past `--stall-timeout-minutes` (default 10, 0 disables) is SIGTERM'd,
+  then SIGKILL'd after grace, and the region retries from checkpoint. The
+  clock is sleep-inclusive (macOS CLOCK_MONOTONIC / Linux CLOCK_BOOTTIME), so
+  a lid-close hang is caught right after wake. Stall kills consume
+  `--error-max-attempts` (default 2); a failed region is skipped until
+  `--retry-failed` or `--reopen <slug>`.
+- `listing_api.py`: read-only HTTP server (`property-api`): `GET /health`,
+  `/metadata`, `/listings`.
 - `field_utils.py`: normalization, validation, dedup keys, backoff helpers.
-- `listing_api.py`: read-only HTTP server (`property-api`) over the CSV.
-  `GET /health`, `GET /metadata`, `GET /listings`.
-- `config.json`: working Zillow configuration (local, untracked — copy from
-  `config.example.json` on a fresh clone). It attaches to
-  `127.0.0.1:9222`; the tracked example launches its own headless browser.
-- `config.example.json`: selector and pacing template.
-- `tests/test_property_scraper.py`, `tests/test_ontario_pull.py`,
-  `tests/test_listing_api.py`, `tests/test_field_utils.py`: unit and fake
-  coverage for the above.
-- `tests/test_integration_attach.py`: end-to-end attach-mode run against a
-  real headless Chrome (skipped when Chrome is absent); proves collection
-  and that the attached browser is not quit.
-- `tests/test_integration_runner.py` with `tests/fixtures/fake_scraper.py`:
-  subprocess-level `property-ontario` coverage of challenge cooldown, retry,
-  and done-region skipping.
-- `tests/fixtures/`: Zillow-shaped HTML fixtures and the fake scraper.
+- `regions.ontario.json`: 36 Ontario cities; slugs are `<city>-<state>`
+  (`toronto-on`) and `{city}`/`{state}` fill `start_url` templates.
+- `scripts/`: `launch_attach_chrome.sh` (debug port + dedicated profile;
+  Chrome 136+ refuses debugging on the default profile), `weekly_run.sh` +
+  `install_weekly_schedule.sh` (launchd weekly run under `caffeinate -i`;
+  lid close still pauses it), `merge_listings.py`, and
+  `bench_collect_page.py` (fixture benchmark; its legacy Selenium attach only
+  runs pre-migration baseline copies).
+- `config.example.json`: tracked selector/pacing template; `config.json` is
+  local, untracked.
+
+## SeleniumBase CDP quirks
+
+- Use `sb_cdp.Chrome` directly; do not use the `SB()`/`Driver()` managers
+  (they launch their own browser and reintroduce chromedriver). Never add
+  captcha-solving or stealth helpers.
+- Attach needs an existing page target and drives the newest tab: keep the
+  attached browser to one tab. The constructor navigates its `url` argument,
+  so pass the real target URL (never `about:blank`) when attaching.
+- `CDPMethods` has no element handles and no positional JS arguments; inline
+  values into self-contained scripts. Find calls block for seconds on a miss
+  (~2.2 s for `find_elements`), which is why cheap JS presence gates precede
+  them.
+- A dead CDP socket does not raise; calls can hang forever. The queue
+  watchdog exists for that; don't add per-page liveness probes in the scraper.
+
+## Data and git rules
+
+- `data/` is gitignored except the committed `data/ontario-listings.csv`;
+  `config.json` stays untracked. Never commit browser profiles, logs,
+  screenshots, checkpoints, or per-region configs.
+- Do not merge, push, or deploy without an explicit human instruction.
 
 ## Boundaries
 
-- Each build task should leave the collect-then-serve loop working, not add
-  a new source framework or a unified multi-source package.
+- Keep the collect-then-serve loop working; no new source frameworks or
+  unified multi-source package.
+- Update `docs/CLI_CONTRACT.md` when flags, config keys, the report schema,
+  or exit codes change.
 
 ## Documentation map
 
-- `docs/PRODUCT_VISION.md`: Zillow-first vision and success criteria.
-- `docs/CLI_CONTRACT.md`: the actual `property-scraper` /
-  `property-ontario` / `property-api` interface, config keys, run report
-  schema, and exit codes.
+- `docs/CLI_CONTRACT.md`: commands, config keys, report schema, exit codes
+  (scraper 0/1/2/3; queue 0/2/3/4; 130/143 signals).
 - `docs/SOURCE_COVERAGE.md`: coverage semantics and `stop_reason` handling.
-- `README.md`: installation, current capabilities, and user entry point.
+- `docs/PRODUCT_VISION.md`: vision and success criteria.
+- `README.md`: installation, capabilities, user entry point.
