@@ -4,7 +4,9 @@ __pycache__/
 *.egg-info/
 *.py[cod]
 .DS_Store
-data/
+data/*
+!data/ontario-listings.csv
+!data/canada-listings.csv
 config.json
 
 # local R history

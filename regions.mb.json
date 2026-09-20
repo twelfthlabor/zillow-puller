@@ -1,0 +1,15 @@
+{
+  "province": "mb",
+  "regions": [
+    {"city": "winnipeg", "name": "Winnipeg"},
+    {"city": "brandon", "name": "Brandon"},
+    {"city": "steinbach", "name": "Steinbach"},
+    {"city": "winkler", "name": "Winkler"},
+    {"city": "portage-la-prairie", "name": "Portage la Prairie"},
+    {"city": "thompson", "name": "Thompson"},
+    {"city": "selkirk", "name": "Selkirk"},
+    {"city": "morden", "name": "Morden"},
+    {"city": "dauphin", "name": "Dauphin"},
+    {"city": "flin-flon", "name": "Flin Flon"}
+  ]
+}

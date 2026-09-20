@@ -1,0 +1,17 @@
+{
+  "province": "ab",
+  "regions": [
+    {"city": "calgary", "name": "Calgary"},
+    {"city": "edmonton", "name": "Edmonton"},
+    {"city": "red-deer", "name": "Red Deer"},
+    {"city": "lethbridge", "name": "Lethbridge"},
+    {"city": "airdrie", "name": "Airdrie"},
+    {"city": "st-albert", "name": "St. Albert"},
+    {"city": "grande-prairie", "name": "Grande Prairie"},
+    {"city": "medicine-hat", "name": "Medicine Hat"},
+    {"city": "fort-mcmurray", "name": "Fort McMurray"},
+    {"city": "spruce-grove", "name": "Spruce Grove"},
+    {"city": "okotoks", "name": "Okotoks"},
+    {"city": "cochrane", "name": "Cochrane"}
+  ]
+}

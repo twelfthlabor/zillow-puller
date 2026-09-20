@@ -1,0 +1,15 @@
+{
+  "province": "nb",
+  "regions": [
+    {"city": "moncton", "name": "Moncton"},
+    {"city": "saint-john", "name": "Saint John"},
+    {"city": "fredericton", "name": "Fredericton"},
+    {"city": "dieppe", "name": "Dieppe"},
+    {"city": "riverview", "name": "Riverview"},
+    {"city": "quispamsis", "name": "Quispamsis"},
+    {"city": "miramichi", "name": "Miramichi"},
+    {"city": "edmundston", "name": "Edmundston"},
+    {"city": "bathurst", "name": "Bathurst"},
+    {"city": "campbellton", "name": "Campbellton"}
+  ]
+}

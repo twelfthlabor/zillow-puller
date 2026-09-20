@@ -1,0 +1,13 @@
+{
+  "province": "nu",
+  "regions": [
+    {"city": "iqaluit", "name": "Iqaluit"},
+    {"city": "rankin-inlet", "name": "Rankin Inlet"},
+    {"city": "arviat", "name": "Arviat"},
+    {"city": "baker-lake", "name": "Baker Lake"},
+    {"city": "igloolik", "name": "Igloolik"},
+    {"city": "cambridge-bay", "name": "Cambridge Bay"},
+    {"city": "pond-inlet", "name": "Pond Inlet"},
+    {"city": "pangnirtung", "name": "Pangnirtung"}
+  ]
+}

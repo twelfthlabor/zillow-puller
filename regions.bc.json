@@ -1,0 +1,19 @@
+{
+  "province": "bc",
+  "regions": [
+    {"city": "vancouver", "name": "Vancouver"},
+    {"city": "surrey", "name": "Surrey"},
+    {"city": "burnaby", "name": "Burnaby"},
+    {"city": "richmond", "name": "Richmond"},
+    {"city": "abbotsford", "name": "Abbotsford"},
+    {"city": "coquitlam", "name": "Coquitlam"},
+    {"city": "kelowna", "name": "Kelowna"},
+    {"city": "langley", "name": "Langley"},
+    {"city": "delta", "name": "Delta"},
+    {"city": "chilliwack", "name": "Chilliwack"},
+    {"city": "nanaimo", "name": "Nanaimo"},
+    {"city": "kamloops", "name": "Kamloops"},
+    {"city": "victoria", "name": "Victoria"},
+    {"city": "prince-george", "name": "Prince George"}
+  ]
+}

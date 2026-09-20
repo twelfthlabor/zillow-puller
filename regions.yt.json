@@ -1,0 +1,13 @@
+{
+  "province": "yt",
+  "regions": [
+    {"city": "whitehorse", "name": "Whitehorse"},
+    {"city": "dawson-city", "name": "Dawson City"},
+    {"city": "watson-lake", "name": "Watson Lake"},
+    {"city": "haines-junction", "name": "Haines Junction"},
+    {"city": "carmacks", "name": "Carmacks"},
+    {"city": "faro", "name": "Faro"},
+    {"city": "teslin", "name": "Teslin"},
+    {"city": "mayo", "name": "Mayo"}
+  ]
+}

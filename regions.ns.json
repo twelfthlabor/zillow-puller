@@ -1,0 +1,15 @@
+{
+  "province": "ns",
+  "regions": [
+    {"city": "halifax", "name": "Halifax"},
+    {"city": "sydney", "name": "Sydney"},
+    {"city": "truro", "name": "Truro"},
+    {"city": "new-glasgow", "name": "New Glasgow"},
+    {"city": "glace-bay", "name": "Glace Bay"},
+    {"city": "amherst", "name": "Amherst"},
+    {"city": "bridgewater", "name": "Bridgewater"},
+    {"city": "yarmouth", "name": "Yarmouth"},
+    {"city": "kentville", "name": "Kentville"},
+    {"city": "antigonish", "name": "Antigonish"}
+  ]
+}

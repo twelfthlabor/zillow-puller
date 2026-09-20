@@ -1,0 +1,13 @@
+{
+  "province": "pe",
+  "regions": [
+    {"city": "charlottetown", "name": "Charlottetown"},
+    {"city": "summerside", "name": "Summerside"},
+    {"city": "stratford", "name": "Stratford"},
+    {"city": "three-rivers", "name": "Three Rivers"},
+    {"city": "cornwall", "name": "Cornwall"},
+    {"city": "montague", "name": "Montague"},
+    {"city": "kensington", "name": "Kensington"},
+    {"city": "souris", "name": "Souris"}
+  ]
+}

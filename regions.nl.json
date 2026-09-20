@@ -1,0 +1,15 @@
+{
+  "province": "nl",
+  "regions": [
+    {"city": "st-johns", "name": "St. John's"},
+    {"city": "conception-bay-south", "name": "Conception Bay South"},
+    {"city": "paradise", "name": "Paradise"},
+    {"city": "mount-pearl", "name": "Mount Pearl"},
+    {"city": "corner-brook", "name": "Corner Brook"},
+    {"city": "grand-falls-windsor", "name": "Grand Falls-Windsor"},
+    {"city": "gander", "name": "Gander"},
+    {"city": "torbay", "name": "Torbay"},
+    {"city": "portugal-cove-st-philips", "name": "Portugal Cove-St. Philip's"},
+    {"city": "happy-valley-goose-bay", "name": "Happy Valley-Goose Bay"}
+  ]
+}

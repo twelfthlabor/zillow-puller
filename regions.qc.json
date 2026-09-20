@@ -1,0 +1,20 @@
+{
+  "province": "qc",
+  "regions": [
+    {"city": "montreal", "name": "Montreal"},
+    {"city": "quebec-city", "name": "Quebec City"},
+    {"city": "laval", "name": "Laval"},
+    {"city": "gatineau", "name": "Gatineau"},
+    {"city": "longueuil", "name": "Longueuil"},
+    {"city": "sherbrooke", "name": "Sherbrooke"},
+    {"city": "levis", "name": "Levis"},
+    {"city": "saguenay", "name": "Saguenay"},
+    {"city": "trois-rivieres", "name": "Trois-Rivieres"},
+    {"city": "terrebonne", "name": "Terrebonne"},
+    {"city": "saint-jean-sur-richelieu", "name": "Saint-Jean-sur-Richelieu"},
+    {"city": "brossard", "name": "Brossard"},
+    {"city": "repentigny", "name": "Repentigny"},
+    {"city": "drummondville", "name": "Drummondville"},
+    {"city": "saint-jerome", "name": "Saint-Jerome"}
+  ]
+}

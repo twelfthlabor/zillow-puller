@@ -1,0 +1,13 @@
+{
+  "province": "nt",
+  "regions": [
+    {"city": "yellowknife", "name": "Yellowknife"},
+    {"city": "hay-river", "name": "Hay River"},
+    {"city": "inuvik", "name": "Inuvik"},
+    {"city": "fort-smith", "name": "Fort Smith"},
+    {"city": "behchoko", "name": "Behchoko"},
+    {"city": "fort-simpson", "name": "Fort Simpson"},
+    {"city": "tuktoyaktuk", "name": "Tuktoyaktuk"},
+    {"city": "norman-wells", "name": "Norman Wells"}
+  ]
+}

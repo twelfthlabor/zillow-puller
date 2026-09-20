@@ -1,0 +1,15 @@
+{
+  "province": "sk",
+  "regions": [
+    {"city": "saskatoon", "name": "Saskatoon"},
+    {"city": "regina", "name": "Regina"},
+    {"city": "prince-albert", "name": "Prince Albert"},
+    {"city": "moose-jaw", "name": "Moose Jaw"},
+    {"city": "swift-current", "name": "Swift Current"},
+    {"city": "yorkton", "name": "Yorkton"},
+    {"city": "north-battleford", "name": "North Battleford"},
+    {"city": "warman", "name": "Warman"},
+    {"city": "weyburn", "name": "Weyburn"},
+    {"city": "estevan", "name": "Estevan"}
+  ]
+}
