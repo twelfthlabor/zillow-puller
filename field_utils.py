@@ -11,7 +11,6 @@ import random
 import re
 from typing import Any
 
-
 KNOWN_TRANSFORMS = {
     "text",
     "money",

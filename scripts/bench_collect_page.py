@@ -328,9 +328,7 @@ def _attach_selenium(chrome: Chrome):
     try:
         from selenium import webdriver
     except ImportError as exc:  # pragma: no cover - environment problem
-        raise SystemExit(
-            f"the pristine --baseline module requires selenium: {exc}"
-        ) from exc
+        raise SystemExit(f"the pristine --baseline module requires selenium: {exc}") from exc
     options = webdriver.ChromeOptions()
     options.debugger_address = chrome.attach_address
     options.page_load_strategy = "eager"
@@ -340,9 +338,7 @@ def _attach_selenium(chrome: Chrome):
     # pytest resolves a matching driver itself.
     original_path = os.environ.get("PATH", "")
     os.environ["PATH"] = os.pathsep.join(
-        entry
-        for entry in original_path.split(os.pathsep)
-        if entry and "seleniumbase" not in entry
+        entry for entry in original_path.split(os.pathsep) if entry and "seleniumbase" not in entry
     )
     try:
         driver = webdriver.Chrome(options=options)

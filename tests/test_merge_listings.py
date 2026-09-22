@@ -77,9 +77,7 @@ def write_region(
     region_dir.mkdir(parents=True, exist_ok=True)
     path = region_dir / "listings.csv"
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(
-            handle, fieldnames=fieldnames or FIELDS, extrasaction="ignore"
-        )
+        writer = csv.DictWriter(handle, fieldnames=fieldnames or FIELDS, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
     return path
@@ -271,9 +269,7 @@ def test_logs_directory_is_ignored_silently(tmp_path: Path, caplog) -> None:
     assert [row["listing_id"] for row in rows] == ["1"]
 
 
-def test_bad_files_are_skipped_without_failing_the_run(
-    tmp_path: Path, caplog
-) -> None:
+def test_bad_files_are_skipped_without_failing_the_run(tmp_path: Path, caplog) -> None:
     state = tmp_path / "state"
     state.mkdir()
     write_region(state, "good-on", [make_row("1", "https://example.test/1")])
@@ -346,9 +342,7 @@ def test_missing_state_dir_reports_zero(tmp_path: Path) -> None:
     assert "unique rows written: 0" in merge.format_summary(stats)
 
 
-def test_refuses_to_replace_populated_output_without_allow_empty(
-    tmp_path: Path, caplog
-) -> None:
+def test_refuses_to_replace_populated_output_without_allow_empty(tmp_path: Path, caplog) -> None:
     state = tmp_path / "state"
     state.mkdir()
     write_region(state, "toronto-on", [make_row("1", "https://example.test/1")])

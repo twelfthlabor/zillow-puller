@@ -88,9 +88,7 @@ class ChallengeSession:
             if self.text_error:
                 raise BrowserError("script execution failed")
             return self.visible_text
-        return any(
-            json.dumps(selector) in expression for selector in self.selector_hits
-        )
+        return any(json.dumps(selector) in expression for selector in self.selector_hits)
 
     def get_page_source(self) -> str:
         return self.page_source
@@ -187,8 +185,7 @@ def test_record_key_prefers_id(tmp_path: Path) -> None:
     scraper = PropertyScraper(settings)
     assert scraper._record_key({"listing_id": " 42 ", "url": "https://x/"}) == "id:42"
     assert (
-        scraper._record_key({"listing_id": "", "url": "HTTPS://X.COM/A/"})
-        == "url:https://x.com/a"
+        scraper._record_key({"listing_id": "", "url": "HTTPS://X.COM/A/"}) == "url:https://x.com/a"
     )
 
 
@@ -223,17 +220,11 @@ def test_listing_id_fallback_extracts_from_url(tmp_path: Path) -> None:
 
 def test_invalid_settings_are_rejected(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="pagination.mode"):
-        Settings.load(
-            make_config(tmp_path, pagination={"mode": "magic"})
-        ).validate()
+        Settings.load(make_config(tmp_path, pagination={"mode": "magic"})).validate()
     with pytest.raises(ValueError, match="cannot be negative"):
-        Settings.load(
-            make_config(tmp_path, request_delay_seconds=-1)
-        ).validate()
+        Settings.load(make_config(tmp_path, request_delay_seconds=-1)).validate()
     with pytest.raises(ValueError, match="not a valid regex"):
-        Settings.load(
-            make_config(tmp_path, listing_id_pattern="([unclosed")
-        ).validate()
+        Settings.load(make_config(tmp_path, listing_id_pattern="([unclosed")).validate()
 
 
 def test_transient_failure_retries_then_preserves_checkpoint(tmp_path: Path) -> None:
@@ -734,16 +725,12 @@ def test_records_from_card_data_maps_missing_and_fallbacks(tmp_path: Path) -> No
         ["ID-9", "/homedetails/X/9_zpid/", None],
     ]
 
-    records = scraper._records_from_card_data(
-        cards, "https://example.com/properties?page=1"
-    )
+    records = scraper._records_from_card_data(cards, "https://example.com/properties?page=1")
 
     first, second = records
     # Missing listing_id is recovered from the URL via the configured regex.
     assert first["listing_id"] == "464240149"
-    assert first["url"] == (
-        "https://example.com/homedetails/Example-St/464240149_zpid/"
-    )
+    assert first["url"] == ("https://example.com/homedetails/Example-St/464240149_zpid/")
     assert first["price"] == "1200000"
     assert first["source_page"] == "https://example.com/properties?page=1"
     # An explicit id wins; missing fields stay empty without raising.
@@ -992,9 +979,7 @@ def test_settle_window_stops_about_settle_seconds_after_a_quiet_bottom(
     assert clock.now == pytest.approx(2.5)
 
 
-def test_step_delay_paces_moving_rounds(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_step_delay_paces_moving_rounds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Moving rounds sleep step_delay_seconds (not the full poll interval),
     and a stable bottom round sleeps poll_seconds."""
     clock = FakeClock()
@@ -1228,9 +1213,7 @@ def test_cards_present_suppress_challenge_check(
     scraper = PropertyScraper(settings)
     scraper.session = CardsAndChallengeDriver()
     calls: list[int] = []
-    monkeypatch.setattr(
-        scraper, "_detect_challenge", lambda: calls.append(1) or True
-    )
+    monkeypatch.setattr(scraper, "_detect_challenge", lambda: calls.append(1) or True)
 
     records = scraper._collect_page_records("https://example.com/properties")
 
@@ -1521,9 +1504,7 @@ def test_attach_multi_tab_warning(
             {"type": "service_worker", "url": "https://example.com/sw.js"},
         ],
     )
-    scraper = PropertyScraper(
-        Settings.load(make_config(tmp_path, attach_address="127.0.0.1:9222"))
-    )
+    scraper = PropertyScraper(Settings.load(make_config(tmp_path, attach_address="127.0.0.1:9222")))
 
     with caplog.at_level(logging.WARNING):
         scraper._warn_on_multiple_page_targets("127.0.0.1:9222")
@@ -1535,12 +1516,8 @@ def test_attach_multi_tab_warning(
 def test_attach_single_tab_logs_no_warning(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    _attach_devtools_payloads(
-        monkeypatch, [{"type": "page", "url": "https://example.com/a"}]
-    )
-    scraper = PropertyScraper(
-        Settings.load(make_config(tmp_path, attach_address="127.0.0.1:9222"))
-    )
+    _attach_devtools_payloads(monkeypatch, [{"type": "page", "url": "https://example.com/a"}])
+    scraper = PropertyScraper(Settings.load(make_config(tmp_path, attach_address="127.0.0.1:9222")))
 
     with caplog.at_level(logging.WARNING):
         scraper._warn_on_multiple_page_targets("127.0.0.1:9222")
@@ -1557,9 +1534,7 @@ def test_attach_multi_tab_probe_failure_is_not_fatal(
         return FakeHttpResponse()
 
     monkeypatch.setattr(property_scraper.urllib.request, "urlopen", broken)
-    scraper = PropertyScraper(
-        Settings.load(make_config(tmp_path, attach_address="127.0.0.1:9222"))
-    )
+    scraper = PropertyScraper(Settings.load(make_config(tmp_path, attach_address="127.0.0.1:9222")))
 
     scraper._warn_on_multiple_page_targets("127.0.0.1:9222")  # must not raise
 
@@ -1584,9 +1559,7 @@ def test_attach_mode_connects_without_launch_args(
         )
     )
 
-    session = PropertyScraper(settings)._build_session(
-        "https://example.com/properties?page=1"
-    )
+    session = PropertyScraper(settings)._build_session("https://example.com/properties?page=1")
 
     assert probed == ["http://127.0.0.1:9222/json/version"]
     # The attach-mode session navigates during construction, so it gets the
@@ -1613,9 +1586,7 @@ def test_attach_dead_endpoint_fails_fast_without_building_session(
 
     monkeypatch.setattr(property_scraper.urllib.request, "urlopen", unreachable)
     monkeypatch.setattr(property_scraper.sb_cdp, "Chrome", ExplodingSession)
-    settings = Settings.load(
-        make_config(tmp_path, attach_address="127.0.0.1:9222")
-    )
+    settings = Settings.load(make_config(tmp_path, attach_address="127.0.0.1:9222"))
     scraper = PropertyScraper(settings)
 
     with pytest.raises(BrowserError, match="launch_attach_chrome"):
@@ -1644,6 +1615,7 @@ def test_main_returns_one_when_idle_attach_endpoint_unreachable(
 ) -> None:
     """Nothing to fetch (checkpoint at max_pages) must still preflight the
     attach endpoint: a dead port exits 1 with a browser_error report."""
+
     def unreachable(url: str, timeout: float | None = None) -> FakeHttpResponse:
         raise OSError("Connection refused")
 
@@ -1656,9 +1628,7 @@ def test_main_returns_one_when_idle_attach_endpoint_unreachable(
         report_file="report.json",
     )
     (tmp_path / "checkpoint.json").write_text(
-        json.dumps(
-            {"next_url": "https://example.com/properties?page=2", "pages_completed": 1}
-        ),
+        json.dumps({"next_url": "https://example.com/properties?page=2", "pages_completed": 1}),
         encoding="utf-8",
     )
     monkeypatch.setattr(sys, "argv", ["property-scraper", "--config", str(config)])
@@ -1675,9 +1645,7 @@ def test_launch_mode_passes_browser_options(
     monkeypatch.setattr(property_scraper.sb_cdp, "Chrome", RecordingSession)
     settings = Settings.load(make_config(tmp_path, user_data_dir="/tmp/chrome-profile"))
 
-    session = PropertyScraper(settings)._build_session(
-        "https://example.com/properties?page=1"
-    )
+    session = PropertyScraper(settings)._build_session("https://example.com/properties?page=1")
 
     # Launch mode starts a fresh browser at about:blank; the per-page retry
     # loop performs the real navigation.
@@ -1703,9 +1671,7 @@ def test_attached_run_does_not_quit_session(
         report_file="report.json",
     )
     (tmp_path / "checkpoint.json").write_text(
-        json.dumps(
-            {"next_url": "https://example.com/properties?page=2", "pages_completed": 1}
-        ),
+        json.dumps({"next_url": "https://example.com/properties?page=2", "pages_completed": 1}),
         encoding="utf-8",
     )
     scraper = ScriptedScraper(
@@ -1739,9 +1705,7 @@ def test_attached_run_skips_session_when_page_cap_reached(
         report_file="report.json",
     )
     (tmp_path / "checkpoint.json").write_text(
-        json.dumps(
-            {"next_url": "https://example.com/properties?page=2", "pages_completed": 1}
-        ),
+        json.dumps({"next_url": "https://example.com/properties?page=2", "pages_completed": 1}),
         encoding="utf-8",
     )
     scraper = ScriptedScraper(Settings.load(config))
@@ -1799,9 +1763,7 @@ def test_attached_run_ignores_session_restarts(
         max_pages=2,
     )
     (tmp_path / "checkpoint.json").write_text(
-        json.dumps(
-            {"next_url": "https://example.com/properties?page=2", "pages_completed": 1}
-        ),
+        json.dumps({"next_url": "https://example.com/properties?page=2", "pages_completed": 1}),
         encoding="utf-8",
     )
     scraper = ScriptedScraper(Settings.load(config), pages=[[make_record("1")]])

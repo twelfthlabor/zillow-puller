@@ -60,9 +60,7 @@ def write_base_config(tmp_path: Path, **overrides: object) -> Path:
 
 def write_regions_file(tmp_path: Path, regions: list[dict[str, str]]) -> Path:
     path = tmp_path / "regions.json"
-    path.write_text(
-        json.dumps({"province": "on", "regions": regions}), encoding="utf-8"
-    )
+    path.write_text(json.dumps({"province": "on", "regions": regions}), encoding="utf-8")
     return path
 
 
@@ -84,9 +82,7 @@ class FakeScraper:
         exit_code, stop_reason = self.results.pop(0)
         if exit_code == 0 and stop_reason is not NO_REPORT:
             report = {} if stop_reason is None else {"stop_reason": stop_reason}
-            (config_path.parent / "report.json").write_text(
-                json.dumps(report), encoding="utf-8"
-            )
+            (config_path.parent / "report.json").write_text(json.dumps(report), encoding="utf-8")
         return exit_code
 
 
@@ -133,10 +129,7 @@ def test_run_with_stall_watchdog_forwards_output_and_can_be_disabled(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     script = (
-        "import sys, time;"
-        "print('child-out');"
-        "print('child-err', file=sys.stderr);"
-        "time.sleep(0.2)"
+        "import sys, time;print('child-out');print('child-err', file=sys.stderr);time.sleep(0.2)"
     )
 
     exit_code = ontario_pull._run_with_stall_watchdog(
@@ -195,8 +188,7 @@ def test_stall_clock_prefers_sleep_inclusive_source() -> None:
     reading = ontario_pull._stall_clock()
     # The watchdog must use the sleep-inclusive helper, not time.monotonic.
     assert (
-        ontario_pull._run_with_stall_watchdog.__kwdefaults__["clock"]
-        is ontario_pull._stall_clock
+        ontario_pull._run_with_stall_watchdog.__kwdefaults__["clock"] is ontario_pull._stall_clock
     )
     if hasattr(time, "CLOCK_BOOTTIME"):
         assert reading == pytest.approx(time.clock_gettime(time.CLOCK_BOOTTIME), abs=5.0)
@@ -852,9 +844,7 @@ def test_cli_reopen_resets_any_status(
     )
     run_calls: list[list[str]] = []
 
-    def fake_run(
-        command: list[str], stall_timeout_seconds: float, **_kwargs: object
-    ) -> int:
+    def fake_run(command: list[str], stall_timeout_seconds: float, **_kwargs: object) -> int:
         run_calls.append(command)
         assert stall_timeout_seconds == 600.0
         config_path = Path(command[command.index("--config") + 1])
@@ -987,9 +977,7 @@ def test_interrupt_saves_state_and_stops_cleanly(tmp_path: Path) -> None:
 
     # The state lock is released on interrupt, so a later run can acquire it.
     resumed = FakeScraper([(0, PAGINATION_EXHAUSTED)])
-    second = run_queue(
-        [Region(city="toronto")], base, state_dir, resumed, lambda _s: None
-    )
+    second = run_queue([Region(city="toronto")], base, state_dir, resumed, lambda _s: None)
     assert second.exit_code == 0
     assert len(resumed.calls) == 1
 
@@ -1080,9 +1068,7 @@ def test_cli_runs_queue_with_fake_subprocess_and_retry_failed(
     )
     subprocess_calls: list[list[str]] = []
 
-    def fake_run(
-        command: list[str], stall_timeout_seconds: float, **_kwargs: object
-    ) -> int:
+    def fake_run(command: list[str], stall_timeout_seconds: float, **_kwargs: object) -> int:
         subprocess_calls.append(command)
         config_path = Path(command[command.index("--config") + 1])
         (config_path.parent / "report.json").write_text(
@@ -1175,9 +1161,7 @@ def test_lock_blocks_concurrent_run(
     state_dir.mkdir(parents=True)
     run_calls: list[list[str]] = []
 
-    def fake_run(
-        command: list[str], stall_timeout_seconds: float, **_kwargs: object
-    ) -> int:
+    def fake_run(command: list[str], stall_timeout_seconds: float, **_kwargs: object) -> int:
         run_calls.append(command)
         config_path = Path(command[command.index("--config") + 1])
         (config_path.parent / "report.json").write_text(
@@ -1235,9 +1219,7 @@ def test_preflight_dead_attach_address_exits_2(
     assert "launch_attach_chrome.sh" in caplog.text
 
 
-def test_missing_max_pages_warns(
-    tmp_path: Path, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_missing_max_pages_warns(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     base = write_base_config(tmp_path)
     raw = json.loads(base.read_text(encoding="utf-8"))
     del raw["max_pages"]

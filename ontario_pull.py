@@ -163,9 +163,7 @@ class Region:
     state: str = "on"
 
     @classmethod
-    def from_mapping(
-        cls, mapping: Mapping[str, Any], default_state: str = "on"
-    ) -> Region:
+    def from_mapping(cls, mapping: Mapping[str, Any], default_state: str = "on") -> Region:
         city = str(mapping.get("city", "")).strip()
         if not city:
             raise ConfigError("region entry is missing a city")
@@ -378,9 +376,7 @@ def _format_location(
 def _atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_name(path.name + ".tmp")
-    tmp_path.write_text(
-        json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    tmp_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     os.replace(tmp_path, path)
 
 
@@ -401,9 +397,7 @@ def validate_region_config(config_path: str | Path) -> None:
     try:
         Settings.load(config_path).validate()
     except (KeyError, TypeError, ValueError, OSError) as exc:
-        raise ConfigError(
-            f"generated config {config_path} is invalid: {exc}"
-        ) from exc
+        raise ConfigError(f"generated config {config_path} is invalid: {exc}") from exc
 
 
 def build_region_config(
@@ -458,8 +452,7 @@ def build_region_config(
         )
     elif int(config.get("max_pages") or 0):
         LOGGER.warning(
-            "%s: max_pages=%s is nonzero, regions will be capped; "
-            "set max_pages: 0 for a full pull",
+            "%s: max_pages=%s is nonzero, regions will be capped; set max_pages: 0 for a full pull",
             region.slug,
             config.get("max_pages"),
         )
@@ -525,8 +518,7 @@ def load_queue_state(
     version = raw.get("schema_version")
     if version is not None and int(version) != SCHEMA_VERSION:
         raise ConfigError(
-            f"state file {path} has unsupported schema_version {version}; "
-            f"expected {SCHEMA_VERSION}"
+            f"state file {path} has unsupported schema_version {version}; expected {SCHEMA_VERSION}"
         )
     raw_regions = raw.get("regions", {})
     if not isinstance(raw_regions, Mapping):
@@ -619,9 +611,7 @@ def _coerce_regions(
     return coerced
 
 
-def _processing_order(
-    regions: Sequence[Region], states: Mapping[str, RegionState]
-) -> list[Region]:
+def _processing_order(regions: Sequence[Region], states: Mapping[str, RegionState]) -> list[Region]:
     """Fresh work (pending/partial) before challenged retries.
 
     Regions that are already ``challenged`` are deferred so a repeatedly
@@ -944,9 +934,7 @@ def default_base_config(module_dir: str | Path | None = None) -> Path:
     return local if local.exists() else base / "config.example.json"
 
 
-def command_for_region(
-    scraper_command: str, log_level: str, config_path: Path
-) -> list[str]:
+def command_for_region(scraper_command: str, log_level: str, config_path: Path) -> list[str]:
     argv = shlex.split(scraper_command)
     if not argv:
         raise ConfigError("--scraper-command must not be empty")
@@ -1019,9 +1007,7 @@ class _OutputForwarder(threading.Thread):
                 self._stream.close()
 
 
-def _stall_exceeded(
-    last_output_at: float, now: float, timeout_seconds: float
-) -> bool:
+def _stall_exceeded(last_output_at: float, now: float, timeout_seconds: float) -> bool:
     """True when the child has been silent past the timeout; 0 disables."""
     return timeout_seconds > 0 and (now - last_output_at) > timeout_seconds
 
@@ -1141,9 +1127,7 @@ class _ScraperRunner:
     ``getattr(..., False)``.
     """
 
-    def __init__(
-        self, scraper_command: str, log_level: str, stall_timeout_seconds: float
-    ) -> None:
+    def __init__(self, scraper_command: str, log_level: str, stall_timeout_seconds: float) -> None:
         self._scraper_command = scraper_command
         self._log_level = log_level
         self._stall_timeout_seconds = stall_timeout_seconds
@@ -1202,8 +1186,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--scraper-command",
         default=None,
-        help="Scraper command line, parsed with shlex "
-        "(default: '<python> -m property_scraper')",
+        help="Scraper command line, parsed with shlex (default: '<python> -m property_scraper')",
     )
     parser.add_argument("--only", default=None, help="Comma-separated region slugs to run")
     parser.add_argument("--skip", default=None, help="Comma-separated region slugs to skip")
@@ -1339,9 +1322,7 @@ def _dry_run(
     try:
         base_config = load_base_config(base_config_path)
         for region in selected:
-            config_path = build_region_config(
-                base_config, region, state_dir, stall_timeout_seconds
-            )
+            config_path = build_region_config(base_config, region, state_dir, stall_timeout_seconds)
             print(f"region={region.slug} config={config_path}")
             print("  " + shlex.join(command_for_region(scraper_command, log_level, config_path)))
     except ConfigError as exc:

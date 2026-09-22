@@ -39,14 +39,14 @@ import logging
 import os
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from field_utils import normalize_record_key  # noqa: E402  (repo-root import)
+from field_utils import normalize_record_key
 
 LOGGER = logging.getLogger("merge_listings")
 
@@ -120,7 +120,7 @@ def _parse_scraped_at(value: object) -> datetime | None:
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -132,10 +132,7 @@ def _read_csv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
     """
     with path.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle, restval="")
-        rows = [
-            {name: value for name, value in row.items() if name is not None}
-            for row in reader
-        ]
+        rows = [{name: value for name, value in row.items() if name is not None} for row in reader]
         return list(reader.fieldnames or []), rows
 
 
@@ -202,9 +199,7 @@ def _region_dirs(state_dir: Path) -> list[Path]:
             (
                 entry
                 for entry in state_dir.iterdir()
-                if entry.is_dir()
-                and not entry.name.startswith(".")
-                and entry.name != LOGS_DIRNAME
+                if entry.is_dir() and not entry.name.startswith(".") and entry.name != LOGS_DIRNAME
             ),
             key=lambda entry: entry.name,
         )
@@ -268,9 +263,7 @@ def merge_listings(
             for name in row:
                 if name not in discovered:
                     discovered.append(name)
-            key = normalize_record_key(
-                str(row.get("listing_id") or ""), str(row.get("url") or "")
-            )
+            key = normalize_record_key(str(row.get("listing_id") or ""), str(row.get("url") or ""))
             if not key:
                 rows_skipped_no_key += 1
                 LOGGER.debug("Skipping row without listing_id or URL in %s", csv_path)
@@ -302,9 +295,7 @@ def merge_listings(
 
     region_rows_written: dict[str, int] = {}
     for candidate in kept:
-        region_rows_written[candidate.region] = (
-            region_rows_written.get(candidate.region, 0) + 1
-        )
+        region_rows_written[candidate.region] = region_rows_written.get(candidate.region, 0) + 1
 
     if files_read == 0 and not allow_empty and _existing_output_has_rows(output):
         raise EmptyOverwriteRefused(

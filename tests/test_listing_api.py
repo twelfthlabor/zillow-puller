@@ -13,9 +13,33 @@ from listing_api import ListingsIndex, make_server
 def write_sample_csv(path: Path) -> None:
     rows = [
         ["listing_id", "address", "price", "beds", "url", "source_page", "scraped_at"],
-        ["1001", "1 Main St", "850000", "3", "https://src/1001_zpid/", "https://src/", "2026-07-30T00:00:00Z"],
-        ["1002", "2 Main St", "450000", "2", "https://src/1002_zpid/", "https://src/", "2026-07-30T00:00:01Z"],
-        ["1003", "3 Oak Ave", "1250000", "4", "https://src/1003_zpid/", "https://src/", "2026-07-30T00:00:02Z"],
+        [
+            "1001",
+            "1 Main St",
+            "850000",
+            "3",
+            "https://src/1001_zpid/",
+            "https://src/",
+            "2026-07-30T00:00:00Z",
+        ],
+        [
+            "1002",
+            "2 Main St",
+            "450000",
+            "2",
+            "https://src/1002_zpid/",
+            "https://src/",
+            "2026-07-30T00:00:01Z",
+        ],
+        [
+            "1003",
+            "3 Oak Ave",
+            "1250000",
+            "4",
+            "https://src/1003_zpid/",
+            "https://src/",
+            "2026-07-30T00:00:02Z",
+        ],
     ]
     with path.open("w", newline="", encoding="utf-8") as handle:
         csv.writer(handle).writerows(rows)
@@ -47,7 +71,15 @@ def test_index_dedups_repeated_rows(tmp_path: Path) -> None:
     write_sample_csv(csv_path)
     with csv_path.open("a", newline="", encoding="utf-8") as handle:
         csv.writer(handle).writerow(
-            ["1001", "1 Main St", "850000", "3", "https://src/1001_zpid/", "https://src/", "2026-07-30T00:01:00Z"]
+            [
+                "1001",
+                "1 Main St",
+                "850000",
+                "3",
+                "https://src/1001_zpid/",
+                "https://src/",
+                "2026-07-30T00:01:00Z",
+            ]
         )
     index = ListingsIndex(csv_path)
     assert index.query({})["total"] == 3

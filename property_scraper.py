@@ -31,7 +31,6 @@ from field_utils import (
     normalize_record_key,
 )
 
-
 CSV_FIELDS = [
     "listing_id",
     "address",
@@ -133,9 +132,7 @@ def _scroll_collect_script(
 ) -> str:
     """Inline the scroll arguments into one self-contained CDP script."""
     return (
-        _SCROLL_COLLECT_SCRIPT.replace(
-            "__SCROLL_FRACTION__", json.dumps(scroll_fraction)
-        )
+        _SCROLL_COLLECT_SCRIPT.replace("__SCROLL_FRACTION__", json.dumps(scroll_fraction))
         .replace("__FIELD_SPECS__", json.dumps(field_specs))
         .replace("__CARD_SELECTOR__", json.dumps(card_selector))
     )
@@ -178,9 +175,8 @@ _DOM_EXTRACT_SCRIPT = """
 
 def _dom_extract_script(field_specs: list[dict[str, Any]], card_selector: str) -> str:
     """Inline the rendered-text extraction arguments into one CDP script."""
-    return (
-        _DOM_EXTRACT_SCRIPT.replace("__FIELD_SPECS__", json.dumps(field_specs))
-        .replace("__CARD_SELECTOR__", json.dumps(card_selector))
+    return _DOM_EXTRACT_SCRIPT.replace("__FIELD_SPECS__", json.dumps(field_specs)).replace(
+        "__CARD_SELECTOR__", json.dumps(card_selector)
     )
 
 
@@ -232,15 +228,11 @@ class Settings:
     report_file: Path | None
 
     @classmethod
-    def load(cls, path: Path) -> "Settings":
+    def load(cls, path: Path) -> Settings:
         raw = json.loads(path.read_text(encoding="utf-8"))
         base = path.parent
         selectors = raw["selectors"]
-        fields = {
-            name: FieldRule(**rule)
-            for name, rule in selectors.items()
-            if name != "card"
-        }
+        fields = {name: FieldRule(**rule) for name, rule in selectors.items() if name != "card"}
         incremental_stop = raw.get("incremental_stop") or {}
         if not isinstance(incremental_stop, dict):
             raise TypeError("incremental_stop must be a JSON object")
@@ -266,15 +258,11 @@ class Settings:
             backoff_base_seconds=float(raw.get("backoff_base_seconds", 5)),
             empty_page_stop_threshold=int(raw.get("empty_page_stop_threshold", 3)),
             session_restart_pages=int(raw.get("session_restart_pages", 0)),
-            listing_id_pattern=raw.get(
-                "listing_id_pattern", r"/(\d+)_zpid/?(?:[?#].*)?$"
-            ),
+            listing_id_pattern=raw.get("listing_id_pattern", r"/(\d+)_zpid/?(?:[?#].*)?$"),
             attach_address=raw.get("attach_address") or None,
             user_data_dir=raw.get("user_data_dir") or None,
             incremental_stop=dict(incremental_stop),
-            archive_directory=(
-                (base / archive_directory).resolve() if archive_directory else None
-            ),
+            archive_directory=((base / archive_directory).resolve() if archive_directory else None),
             report_file=(base / report_file).resolve() if report_file else None,
         )
 
@@ -292,12 +280,8 @@ class Settings:
             errors.append("page_wait_seconds must be positive")
         if self.max_pages < 0:
             errors.append("max_pages cannot be negative (0 means unlimited)")
-        if self.attach_address is not None and not is_valid_attach_address(
-            self.attach_address
-        ):
-            errors.append(
-                "attach_address must be 'host:port' with a port between 1 and 65535"
-            )
+        if self.attach_address is not None and not is_valid_attach_address(self.attach_address):
+            errors.append("attach_address must be 'host:port' with a port between 1 and 65535")
         incremental_stop = self.incremental_stop
         if incremental_stop.get("enabled"):
             try:
@@ -307,9 +291,7 @@ class Settings:
                 errors.append("incremental_stop values must be numeric")
             else:
                 if not 0.0 <= known_ratio <= 1.0:
-                    errors.append(
-                        "incremental_stop.known_ratio must be between 0 and 1"
-                    )
+                    errors.append("incremental_stop.known_ratio must be between 0 and 1")
                 if min_records < 0:
                     errors.append("incremental_stop.min_records cannot be negative")
         if self.max_attempts_per_page < 1:
@@ -363,9 +345,7 @@ class PropertyScraper:
             return set()
         with path.open(newline="", encoding="utf-8") as handle:
             return {
-                self._record_key(row)
-                for row in csv.DictReader(handle)
-                if self._record_key(row)
+                self._record_key(row) for row in csv.DictReader(handle) if self._record_key(row)
             }
 
     def _load_checkpoint(self) -> dict[str, Any]:
@@ -426,9 +406,7 @@ class PropertyScraper:
         if not isinstance(targets, list):
             return
         page_tabs = sum(
-            1
-            for target in targets
-            if isinstance(target, dict) and target.get("type") == "page"
+            1 for target in targets if isinstance(target, dict) and target.get("type") == "page"
         )
         if page_tabs > 1:
             logging.warning(
@@ -487,9 +465,7 @@ class PropertyScraper:
         jitter = self.settings.request_jitter_seconds
         time.sleep(max(0.0, delay + random.uniform(-jitter, jitter)))
 
-    def _finalize_record(
-        self, values: dict[str, str], page_url: str
-    ) -> dict[str, str]:
+    def _finalize_record(self, values: dict[str, str], page_url: str) -> dict[str, str]:
         """Apply URL joining, id fallback, and provenance to raw field values."""
         record = dict(values)
         record["url"] = urljoin(page_url, record.get("url", ""))
@@ -521,9 +497,7 @@ class PropertyScraper:
                 rule = self.settings.field_rules[name]
                 text = "" if raw is None else str(raw)
                 value = normalize(text, rule.transform)
-                values[name] = apply_validation(
-                    value, rule.transform, rule.validation
-                )
+                values[name] = apply_validation(value, rule.transform, rule.validation)
             records.append(self._finalize_record(values, page_url))
         return records
 
@@ -539,16 +513,17 @@ class PropertyScraper:
         """
         assert self.session is not None
         try:
-            result = self.session.execute_script(
-                _dom_extract_script(field_specs, self.settings.card_selector)
-            ) or {}
+            result = (
+                self.session.execute_script(
+                    _dom_extract_script(field_specs, self.settings.card_selector)
+                )
+                or {}
+            )
         except Exception as exc:
             raise BrowserError(f"Card extraction failed: {exc}") from exc
         return self._records_from_card_data(result.get("cards") or [], page_url)
 
-    def _incremental_complete(
-        self, records: list[dict[str, str]], added: int
-    ) -> bool:
+    def _incremental_complete(self, records: list[dict[str, str]], added: int) -> bool:
         """True when an incremental refresh has mostly rediscovered known rows."""
         config = self.settings.incremental_stop
         if not config.get("enabled") or not records:
@@ -612,9 +587,7 @@ class PropertyScraper:
         base = self.settings.error_directory / f"{stamp}-{label}"
         try:
             self.session.save_screenshot(str(base.with_suffix(".png")))
-            base.with_suffix(".html").write_text(
-                self.session.get_page_source(), encoding="utf-8"
-            )
+            base.with_suffix(".html").write_text(self.session.get_page_source(), encoding="utf-8")
             base.with_suffix(".json").write_text(
                 json.dumps(
                     {
@@ -680,10 +653,7 @@ class PropertyScraper:
         assert self.session is not None
         deadline = time.monotonic() + self.settings.page_wait_seconds
         poll_seconds = min(_CARD_WAIT_POLL_SECONDS, self.settings.page_wait_seconds)
-        card_lookup = (
-            "document.querySelector("
-            f"{json.dumps(self.settings.card_selector)}) !== null"
-        )
+        card_lookup = f"document.querySelector({json.dumps(self.settings.card_selector)}) !== null"
         while True:
             try:
                 # CDP find_elements waits out a ~2s miss timeout; gate it with
@@ -728,12 +698,8 @@ class PropertyScraper:
             return self._extract_rendered_records(field_specs, page_url)
         max_rounds = int(scrolling.get("max_rounds", 80))
         stable_rounds_required = int(scrolling.get("stable_rounds", 3))
-        poll_seconds = float(
-            scrolling.get("poll_seconds", scrolling.get("pause_seconds", 0.2))
-        )
-        scroll_fraction = min(
-            max(float(scrolling.get("scroll_fraction", 0.8)), 0.1), 1.0
-        )
+        poll_seconds = float(scrolling.get("poll_seconds", scrolling.get("pause_seconds", 0.2)))
+        scroll_fraction = min(max(float(scrolling.get("scroll_fraction", 0.8)), 0.1), 1.0)
         # Card details can arrive seconds after the pane reaches the bottom (a
         # slow field response). Once at the bottom, the loop may not stop until
         # settle_seconds have passed with no change in any extracted value or
@@ -745,9 +711,7 @@ class PropertyScraper:
         # A short dwell between moving rounds paces the pane's own lazy loads
         # (one viewport step at a time instead of a burst of steps). This is
         # not the request-level courtesy delay, which stays in _courtesy_delay.
-        step_delay_seconds = max(
-            0.0, float(scrolling.get("step_delay_seconds", 0.05))
-        )
+        step_delay_seconds = max(0.0, float(scrolling.get("step_delay_seconds", 0.05)))
         records_by_key: dict[str, dict[str, str]] = {}
         stable_rounds = 0
         previous_cards: list[Any] | None = None
@@ -763,17 +727,18 @@ class PropertyScraper:
             # card's raw fields; the script carries its own arguments because
             # CDP execute_script takes a single expression and no arguments.
             try:
-                result = self.session.execute_script(
-                    _scroll_collect_script(
-                        scroll_fraction, field_specs, self.settings.card_selector
+                result = (
+                    self.session.execute_script(
+                        _scroll_collect_script(
+                            scroll_fraction, field_specs, self.settings.card_selector
+                        )
                     )
-                ) or {}
+                    or {}
+                )
             except Exception as exc:
                 raise BrowserError(f"Scroll collection failed: {exc}") from exc
             if not result.get("hasContainer", True):
-                logging.warning(
-                    "No scroll container found; using currently rendered cards."
-                )
+                logging.warning("No scroll container found; using currently rendered cards.")
                 return self._extract_rendered_records(field_specs, page_url)
             cards_data = result.get("cards") or []
             for record in self._records_from_card_data(cards_data, page_url):
@@ -782,8 +747,7 @@ class PropertyScraper:
                     continue
                 previous = records_by_key.get(key, {})
                 records_by_key[key] = {
-                    field: record.get(field) or previous.get(field, "")
-                    for field in CSV_FIELDS
+                    field: record.get(field) or previous.get(field, "") for field in CSV_FIELDS
                 }
 
             now = time.monotonic()
@@ -885,9 +849,7 @@ class PropertyScraper:
         # Prefer visible text: inline scripts and hidden markup can contain
         # challenge-sounding strings without the page actually being one.
         try:
-            visible_text = self.session.evaluate(
-                "document.body ? document.body.innerText : ''"
-            )
+            visible_text = self.session.evaluate("document.body ? document.body.innerText : ''")
         except Exception:
             visible_text = None
         if isinstance(visible_text, str) and visible_text.strip():
@@ -921,24 +883,18 @@ class PropertyScraper:
             if _normalized_url(before) == _normalized_url(page_url):
                 return
             marker = f"nav-{uuid.uuid4().hex}"
-            self.session.evaluate(
-                f"window.__property_scraper_nav_marker = {json.dumps(marker)}"
-            )
+            self.session.evaluate(f"window.__property_scraper_nav_marker = {json.dumps(marker)}")
             self.session.get(page_url)
             after = self.session.get_current_url() or ""
             marker_survives = bool(
-                self.session.evaluate(
-                    "window.__property_scraper_nav_marker || ''"
-                )
+                self.session.evaluate("window.__property_scraper_nav_marker || ''")
             )
         except Exception as exc:
             raise BrowserError(f"Navigation to {page_url} failed: {exc}") from exc
         if after.startswith("chrome-error://") or (
             marker_survives and _normalized_url(after) == _normalized_url(before)
         ):
-            raise BrowserError(
-                f"Navigation to {page_url} did not complete (still at {after!r})"
-            )
+            raise BrowserError(f"Navigation to {page_url} did not complete (still at {after!r})")
 
     def _load_page_with_retry(self, page_url: str) -> list[dict[str, str]]:
         """Fetch one page, retrying transient failures with exponential backoff.
@@ -1039,8 +995,7 @@ class PropertyScraper:
                 assert address is not None
                 self._warn_on_multiple_page_targets(address)
             will_fetch_first_page = bool(next_url) and (
-                self.settings.max_pages <= 0
-                or pages_completed < self.settings.max_pages
+                self.settings.max_pages <= 0 or pages_completed < self.settings.max_pages
             )
             skip_first_courtesy_delay = False
             if will_fetch_first_page and self.attached:
@@ -1050,13 +1005,10 @@ class PropertyScraper:
                 # duplicate delay for that same first page.
                 self._courtesy_delay()
                 skip_first_courtesy_delay = True
-            self.session = (
-                self._build_session(next_url) if will_fetch_first_page else None
-            )
+            self.session = self._build_session(next_url) if will_fetch_first_page else None
             try:
                 while next_url and (
-                    self.settings.max_pages <= 0
-                    or pages_completed < self.settings.max_pages
+                    self.settings.max_pages <= 0 or pages_completed < self.settings.max_pages
                 ):
                     if self.stop_requested:
                         raise StopRequested
@@ -1106,10 +1058,7 @@ class PropertyScraper:
                                 "Page rendered no records (%d consecutive empty).",
                                 consecutive_empty_pages,
                             )
-                            if (
-                                consecutive_empty_pages
-                                >= self.settings.empty_page_stop_threshold
-                            ):
+                            if consecutive_empty_pages >= self.settings.empty_page_stop_threshold:
                                 logging.error(
                                     "Stopping after %d consecutive empty pages — "
                                     "selector drift or a block page. Resume is "
@@ -1158,9 +1107,7 @@ class PropertyScraper:
             finally:
                 if self.session is not None:
                     if self.attached:
-                        logging.info(
-                            "Attached browser left open; the session was not quit."
-                        )
+                        logging.info("Attached browser left open; the session was not quit.")
                     else:
                         self.session.quit()
         finally:
@@ -1206,9 +1153,7 @@ def scrape_city(config_path: Path | str, city: str, state: str) -> None:
                 # Preserve this placeholder for PropertyScraper._next_url().
                 pagination[key] = template.format(page="{page}", **location_values)
             except (KeyError, IndexError, ValueError) as exc:
-                raise ValueError(
-                    f"pagination.{key} placeholder error: {exc}"
-                ) from exc
+                raise ValueError(f"pagination.{key} placeholder error: {exc}") from exc
 
     location_key = f"{city_slug}-{state_slug}"
     report_file = settings.report_file
@@ -1223,8 +1168,7 @@ def scrape_city(config_path: Path | str, city: str, state: str) -> None:
             f"{settings.output_csv.stem}-{location_key}{settings.output_csv.suffix}"
         ),
         checkpoint_file=settings.checkpoint_file.with_name(
-            f"{settings.checkpoint_file.stem}-{location_key}"
-            f"{settings.checkpoint_file.suffix}"
+            f"{settings.checkpoint_file.stem}-{location_key}{settings.checkpoint_file.suffix}"
         ),
         error_directory=settings.error_directory / location_key,
         archive_directory=(
@@ -1242,9 +1186,7 @@ def scrape_city(config_path: Path | str, city: str, state: str) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Collect authorized property listings into CSV."
-    )
+    parser = argparse.ArgumentParser(description="Collect authorized property listings into CSV.")
     parser.add_argument(
         "--config",
         type=Path,

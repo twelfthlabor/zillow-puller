@@ -95,9 +95,7 @@ class ListingsIndex:
             if reader.fieldnames is None:
                 return records, keys, datetime.now(UTC).isoformat()
             for row in reader:
-                key = normalize_record_key(
-                    row.get("listing_id", ""), row.get("url", "")
-                )
+                key = normalize_record_key(row.get("listing_id", ""), row.get("url", ""))
                 if key and key not in keys:
                     keys.add(key)
                     records.append(row)
@@ -161,7 +159,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def do_GET(self) -> None:  # noqa: N802 (http.server API name)
+    def do_GET(self) -> None:
         parsed = urlparse(self.path)
         if parsed.path == "/health":
             with self.index.lock:
@@ -175,11 +173,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/listings":
             query = parse_qs(parsed.query)
-            filters = {
-                key: values[-1]
-                for key, values in query.items()
-                if key in FILTER_SPECS
-            }
+            filters = {key: values[-1] for key, values in query.items() if key in FILTER_SPECS}
             if "limit" in query:
                 try:
                     limit = int(query["limit"][-1])
@@ -220,9 +214,7 @@ def make_server(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Serve collected property listings as a JSON API."
-    )
+    parser = argparse.ArgumentParser(description="Serve collected property listings as a JSON API.")
     parser.add_argument(
         "--csv",
         type=Path,
