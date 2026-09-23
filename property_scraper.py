@@ -180,6 +180,48 @@ def _dom_extract_script(field_specs: list[dict[str, Any]], card_selector: str) -
     )
 
 
+# JSON-LD ItemList capture: dense/virtualized result pages only hydrate a few
+# DOM cards at a time, but the page's JSON-LD script embeds every listing for
+# the page, so the collector reads it from the page source as a second path.
+_JSONLD_SCRIPT_RE = re.compile(
+    r"""<script\b[^>]*type=["']application/ld\+json["'][^>]*>(.*?)</script>""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def _itemlist_entries_from_html(html: str) -> list[dict[str, Any]]:
+    """Return raw ``itemListElement`` entries from JSON-LD ItemList scripts.
+
+    Malformed scripts and non-ItemList JSON-LD are skipped, never raised:
+    a parse miss only costs the fallback records, never the page.
+    """
+    entries: list[dict[str, Any]] = []
+    for match in _JSONLD_SCRIPT_RE.finditer(html):
+        try:
+            data = json.loads(match.group(1))
+        except json.JSONDecodeError:
+            continue
+        nodes = data if isinstance(data, list) else [data]
+        flat: list[Any] = []
+        for node in nodes:
+            graph = node.get("@graph") if isinstance(node, dict) else None
+            if isinstance(graph, list):
+                flat.extend(graph)
+            else:
+                flat.append(node)
+        for node in flat:
+            if not isinstance(node, dict):
+                continue
+            types = node.get("@type")
+            type_list = types if isinstance(types, list) else [types]
+            if "ItemList" not in type_list:
+                continue
+            for element in node.get("itemListElement") or []:
+                if isinstance(element, dict):
+                    entries.append(element)
+    return entries
+
+
 def _normalized_url(url: str | None) -> str:
     """Normalize a URL the way a browser does (trailing slash and case)."""
     if not url:
@@ -197,6 +239,20 @@ def _write_page_archive(archive_directory: Path, page_number: int, html: str) ->
     with gzip.open(path, "wt", encoding="utf-8") as handle:
         handle.write(html)
     return path
+
+
+def _compose_address(value: Any) -> str | None:
+    """Flatten a schema.org PostalAddress into one display line."""
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, dict):
+        return None
+    head = ", ".join(
+        part for part in (value.get("streetAddress"), value.get("addressLocality")) if part
+    )
+    tail = " ".join(part for part in (value.get("addressRegion"), value.get("postalCode")) if part)
+    line = ", ".join(part for part in (head, tail) if part)
+    return line or None
 
 
 @dataclass(frozen=True)
@@ -523,6 +579,135 @@ class PropertyScraper:
             raise BrowserError(f"Card extraction failed: {exc}") from exc
         return self._records_from_card_data(result.get("cards") or [], page_url)
 
+    def _records_from_itemlist_entries(
+        self, entries: list[dict[str, Any]], page_url: str
+    ) -> list[dict[str, str]]:
+        """Map JSON-LD ItemList entries onto the CSV record shape (pure).
+
+        Structured JSON values use semantic transforms (money/integer), not the
+        card-scraping ``detail_*`` transforms, which expect concatenated card
+        text like ``"3 bds2 ba"``. Only fields present in the configured
+        ``field_rules`` are populated, mirroring the card path; the listing id
+        falls out of the zillow ``_zpid`` URL via ``_finalize_record``.
+        """
+        semantics = {
+            "address": "text",
+            "price": "money",
+            "beds": "integer",
+            "baths": "integer",
+            "sqft": "integer",
+            "agent": "text",
+        }
+
+        def pick(*values: Any) -> Any:
+            return next((value for value in values if value is not None), None)
+
+        records: list[dict[str, str]] = []
+        for entry in entries:
+            item = entry.get("item") if isinstance(entry.get("item"), dict) else entry
+            if not isinstance(item, dict):
+                continue
+            offers = item.get("offers")
+            if isinstance(offers, list):
+                offers = next((offer for offer in offers if isinstance(offer, dict)), {})
+            if not isinstance(offers, dict):
+                offers = {}
+            offered = offers.get("itemOffered")
+            if not isinstance(offered, dict):
+                offered = {}
+            floor_size = pick(offered.get("floorSize"), item.get("floorSize"))
+            if isinstance(floor_size, dict):
+                floor_size = floor_size.get("value")
+            raw_values: dict[str, Any] = {
+                "address": pick(item.get("name"), _compose_address(item.get("address"))),
+                "price": offers.get("price"),
+                "beds": pick(offered.get("numberOfBedrooms"), item.get("numberOfBedrooms")),
+                "baths": pick(
+                    offered.get("numberOfBathroomsTotal"),
+                    item.get("numberOfBathroomsTotal"),
+                ),
+                "sqft": floor_size,
+                "agent": None,
+                "url": pick(item.get("url"), item.get("@id")),
+            }
+            values: dict[str, str] = {}
+            for name, raw in raw_values.items():
+                if name not in self.settings.field_rules:
+                    continue
+                if raw is None:
+                    values[name] = ""
+                    continue
+                if isinstance(raw, float) and raw.is_integer():
+                    raw = int(raw)
+                transform = semantics.get(name, "text")
+                value = normalize(str(raw), transform)
+                validation = self.settings.field_rules[name].validation
+                values[name] = apply_validation(value, transform, validation)
+            record = self._finalize_record(values, page_url)
+            # The zillow zpid (via the listing-id URL fallback) is the identity
+            # that dedups ItemList rows against the DOM rows; drop the rest.
+            if record.get("listing_id"):
+                records.append(record)
+        return records
+
+    def _collect_itemlist_records(self, page_url: str) -> list[dict[str, str]]:
+        """Collect every listing embedded in the page's JSON-LD ItemList.
+
+        Dense Zillow result pages only hydrate a handful of DOM cards
+        (virtualized list), but the JSON-LD carries the full page — a second,
+        scroll-independent capture path. Best effort: a page-source read
+        failure only logs and leaves the DOM records in place.
+        """
+        assert self.session is not None
+        try:
+            html = self.session.get_page_source()
+        except Exception as exc:
+            logging.warning("Could not read page source for JSON-LD ItemList: %s", exc)
+            return []
+        entries = _itemlist_entries_from_html(html)
+        if not entries:
+            return []
+        records = self._records_from_itemlist_entries(entries, page_url)
+        logging.info(
+            "JSON-LD ItemList: %d entries -> %d records on %s.",
+            len(entries),
+            len(records),
+            page_url,
+        )
+        return records
+
+    def _merge_page_records(
+        self, dom_records: list[dict[str, str]], itemlist_records: list[dict[str, str]]
+    ) -> list[dict[str, str]]:
+        """Merge one page's records by listing key; DOM wins on field conflicts.
+
+        DOM records keep their order and their non-empty values (the schema was
+        built from them); ItemList records fill fields the DOM left empty and
+        append listings the DOM never rendered. Dedup is by the same record key
+        used across pages, so this is safe under Zillow's cross-page repeats.
+        """
+        merged: dict[str, dict[str, str]] = {}
+        for record in dom_records:
+            key = self._record_key(record)
+            if key:
+                merged[key] = record
+        recovered = 0
+        for record in itemlist_records:
+            key = self._record_key(record)
+            if not key:
+                continue
+            previous = merged.get(key)
+            if previous is None:
+                merged[key] = record
+                recovered += 1
+            else:
+                merged[key] = {
+                    field: previous.get(field) or record.get(field, "") for field in CSV_FIELDS
+                }
+        if recovered:
+            logging.info("JSON-LD ItemList recovered %d listing(s) the DOM path missed.", recovered)
+        return list(merged.values())
+
     def _incremental_complete(self, records: list[dict[str, str]], added: int) -> bool:
         """True when an incremental refresh has mostly rediscovered known rows."""
         config = self.settings.incremental_stop
@@ -678,6 +863,14 @@ class PropertyScraper:
             time.sleep(min(poll_seconds, remaining))
 
     def _collect_page_records(self, page_url: str) -> list[dict[str, str]]:
+        """Collect one page's listings: DOM cards merged with JSON-LD ItemList."""
+        dom_records = self._collect_dom_page_records(page_url)
+        itemlist_records = self._collect_itemlist_records(page_url)
+        if not itemlist_records:
+            return dom_records
+        return self._merge_page_records(dom_records, itemlist_records)
+
+    def _collect_dom_page_records(self, page_url: str) -> list[dict[str, str]]:
         """Collect cards while progressively scrolling a lazy-rendered result pane."""
         assert self.session is not None
         cards = self._wait_for_cards()

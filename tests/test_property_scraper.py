@@ -826,6 +826,103 @@ def test_collect_page_records_falls_back_to_rendered_text_without_container(
     assert any("innerText" in script for script in driver.scripts)
 
 
+def test_collect_page_records_merges_jsonld_itemlist(tmp_path: Path) -> None:
+    """Dense/virtualized pages: the JSON-LD ItemList is a second capture path.
+
+    The DOM only hydrates a handful of cards per page, while the page's
+    JSON-LD carries every listing for that page. The merge must recover the
+    ItemList-only listings, let non-empty DOM values win field conflicts, and
+    fill fields the DOM left empty -- all deduped by listing id.
+    """
+    config = make_config(
+        tmp_path,
+        scrolling={"enabled": False},
+        selectors={
+            "card": "[data-test='property-card']",
+            "listing_id": {
+                "selector": "[data-listing-id]",
+                "attribute": "data-listing-id",
+            },
+            "url": {"selector": "a", "attribute": "href"},
+            "price": {
+                "selector": ".price",
+                "transform": "money",
+                "validation": {"min": 0, "max": 50000000},
+            },
+            "beds": {
+                "selector": ".beds",
+                "transform": "detail_beds",
+                "validation": {"min": 0, "max": 100},
+            },
+            "address": {"selector": "address"},
+        },
+    )
+    page_html = """<html><head>
+    <script type="application/ld+json">{"@type": "Organization"}</script>
+    <script type="application/ld+json">not-json</script>
+    <script type="application/ld+json">
+    {"@type": "ItemList", "numberOfItems": 3, "itemListElement": [
+      {"@type": "ListItem", "position": 1, "item": {
+        "@type": ["RealEstateListing", "Product"],
+        "url": "https://example.com/homedetails/1_zpid/",
+        "name": "1 Main St WRONG",
+        "offers": {"price": 999999, "itemOffered": {"numberOfBedrooms": 4}}
+      }},
+      {"@type": "ListItem", "position": 2, "item": {
+        "@type": "RealEstateListing",
+        "url": "https://example.com/homedetails/2_zpid/",
+        "name": "2 Oak Ave",
+        "offers": {"price": 200000, "itemOffered": {"numberOfBedrooms": 2}}
+      }},
+      {"@type": "ListItem", "position": 3, "item": {
+        "@type": "RealEstateListing",
+        "url": "https://example.com/no-zpid-here/",
+        "name": "9 Ghost St",
+        "offers": {"price": 1}
+      }}
+    ]}
+    </script></head><body></body></html>"""
+
+    class ItemListDriver:
+        page_source = page_html
+
+        def evaluate(self, expression: str) -> bool:
+            return True
+
+        def find_elements(self, selector: str) -> list[object]:
+            return [object()]
+
+        def execute_script(self, script: str) -> object:
+            # Only the one hydrated DOM card is rendered.
+            return {
+                "cards": [
+                    ["1", "/homedetails/1_zpid/", "$100,000", None, "1 Main St"],
+                ]
+            }
+
+        def get_page_source(self) -> str:
+            return self.page_source
+
+    scraper = PropertyScraper(Settings.load(config))
+    scraper.session = ItemListDriver()
+
+    records = scraper._collect_page_records("https://example.com/properties")
+
+    by_id = {record["listing_id"]: record for record in records}
+    # Fails before the ItemList path: only the single DOM card survived.
+    assert set(by_id) == {"1", "2"}
+    assert all(record["listing_id"] for record in records)  # zero id leaks
+    # DOM wins the conflicts (price, address) and the ItemList fills the gap.
+    assert by_id["1"]["price"] == "100000"
+    assert by_id["1"]["address"] == "1 Main St"
+    assert by_id["1"]["beds"] == "4"
+    # The listing the DOM never rendered arrives whole from the ItemList.
+    assert by_id["2"]["price"] == "200000"
+    assert by_id["2"]["beds"] == "2"
+    assert by_id["2"]["address"] == "2 Oak Ave"
+    assert by_id["2"]["source_page"] == "https://example.com/properties"
+
+
 def test_poll_seconds_falls_back_to_pause_seconds(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
